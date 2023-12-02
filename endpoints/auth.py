@@ -5,11 +5,12 @@ from sqlalchemy.exc import IntegrityError
 import bcrypt
 import jwt
 import os
+import datetime
 secret_key = os.getenv("SECRET_KEY")
 
-auth_blueprint = Blueprint('auth', __name__)
+auth_blueprint = Blueprint('auth', __name__, url_prefix='/auth')
 
-@auth_blueprint.route('/user/signup', methods=['POST'])
+@auth_blueprint.route('/signup', methods=['POST'])
 def signup():
     if request.method == 'POST':
         try:
@@ -43,7 +44,7 @@ def signup():
         except TypeError as e:
             return jsonify({'error': str(e)}), 400
         
-@auth_blueprint.route('/user/signin', methods=['POST'])
+@auth_blueprint.route('/login', methods=['POST'])
 def login():
     if request.method == 'POST':
         try:
@@ -64,10 +65,12 @@ def login():
                     'name': user.user_name,
                     'email': user.email,
                     'contact': str(user.contact),
-                    'role': user.role
+                    'role': user.role,
+                    'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             }
             token = jwt.encode(response["data"], secret_key, algorithm='HS256')
+            response['data'].pop('created_at')
             response['data']['token'] = token
             return jsonify(response), 200
 

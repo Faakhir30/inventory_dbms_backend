@@ -8,7 +8,10 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:1234@localhost:54
 db = SQLAlchemy()
 db.init_app(app)
 from endpoints.auth import auth_blueprint
+from endpoints.product import product_blueprint
+
 app.register_blueprint(auth_blueprint)
+app.register_blueprint(product_blueprint)
 with app.app_context():
     db.create_all()
 @app.route('/', methods=['GET', 'POST'])
