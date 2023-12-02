@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from main import db
-from models.user import Admin, Customer, Supplier, User
+from models.user import Admin, Customer, Supplier, User, Employee
 from sqlalchemy.exc import IntegrityError
 import bcrypt
 import jwt
@@ -29,6 +29,8 @@ def signup():
                 new_user = Customer(user_name=name, email=email, password=hashed_password, contact=contact)
             elif role == 'supplier':
                 new_user = Supplier(user_name=name, email=email, password=hashed_password, contact=contact)
+            elif role == 'employee':
+                new_user = Employee(user_name=name, email=email, password=hashed_password, contact=contact)
             else:
                 return jsonify({'error': 'Invalid role'}), 400
 

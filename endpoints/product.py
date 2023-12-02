@@ -1,11 +1,9 @@
 from flask import Blueprint, request, jsonify
 from main import db
-from models.user import Product, ProductItem
+from models.product import Product, ProductItem
 from sqlalchemy.exc import IntegrityError
-import os
 from dependencies.authentication import token_required_test
 from utils.general import object_as_dict
-secret_key = os.getenv("SECRET_KEY")
 
 
 product_blueprint = Blueprint('product', __name__, url_prefix='/product')
@@ -39,7 +37,6 @@ def add():
             return jsonify({'error': error_info}), 500
         except TypeError as e:
             return jsonify({'error': str(e)}), 400
-        
         
 @product_blueprint.route('/get', methods=['GET'])
 def get():
