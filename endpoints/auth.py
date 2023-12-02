@@ -1,7 +1,12 @@
 from flask import Blueprint, request, jsonify
 from main import db
-from models.user import Admin, Customer, Supplier
+from models.user import Admin, Customer, Supplier, User
 from sqlalchemy.exc import IntegrityError
+import bcrypt
+import jwt
+import os
+secret_key = os.getenv("SECRET_KEY")
+
 auth_blueprint = Blueprint('auth', __name__)
 
 @auth_blueprint.route('/user/signup', methods=['POST'])
@@ -14,13 +19,15 @@ def signup():
             password = request.json['password']
             contact = request.json['contact']
             role = request.json['role']
+            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+
             # Creating the user object
             if role == 'admin':
-                new_user = Admin(user_name=name, email=email, password=password, contact=contact)
+                new_user = Admin(user_name=name, email=email, password=hashed_password, contact=contact)
             elif role == 'customer':
-                new_user = Customer(user_name=name, email=email, password=password, contact=contact)
+                new_user = Customer(user_name=name, email=email, password=hashed_password, contact=contact)
             elif role == 'supplier':
-                new_user = Supplier(user_name=name, email=email, password=password, contact=contact)
+                new_user = Supplier(user_name=name, email=email, password=hashed_password, contact=contact)
             else:
                 return jsonify({'error': 'Invalid role'}), 400
 
@@ -40,26 +47,13 @@ def signup():
 def login():
     if request.method == 'POST':
         try:
-            # Extracting details from the request
             email = request.json['email']
             password = request.json['password']
-            role = request.json['role']
-            # Creating the user object
-            if role == 'admin':
-                user = Admin.query.filter_by(email=email).first()
-            elif role == 'customer':
-                user = Customer.query.filter_by(email=email).first()
-            elif role == 'supplier':
-                user = Supplier.query.filter_by(email=email).first()
-            else:
-                return jsonify({'error': 'Invalid role'}), 400
-
-            # Checking if the user exists
+            user = User.query.filter_by(email=email).first()
             if user is None:
                 return jsonify({'error': 'Invalid email or password'}), 400
-
-            # Checking if the password is correct
-            if user.password != password:
+            hashed_password = user.password
+            if not bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
                 return jsonify({'error': 'Invalid email or password'}), 400
 
             # Creating the response object
@@ -67,12 +61,14 @@ def login():
                 'message': 'User logged in successfully',
                 'data': {
                     'id': user.id,
-                    'name': user.name,
+                    'name': user.user_name,
                     'email': user.email,
-                    'contact': user.contact,
-                    'role': role
+                    'contact': str(user.contact),
+                    'role': user.role
                 }
             }
+            token = jwt.encode(response["data"], secret_key, algorithm='HS256')
+            response['data']['token'] = token
             return jsonify(response), 200
 
         except IntegrityError as e:
