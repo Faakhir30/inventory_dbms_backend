@@ -14,12 +14,12 @@ db.init_app(app)
 from endpoints.auth import auth_blueprint
 from endpoints.product import product_blueprint
 from endpoints.order import order_blueprint
-
+from endpoints.users import users_blueprint
 
 app.register_blueprint(order_blueprint)
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(product_blueprint)
-
+app.register_blueprint(users_blueprint)
 
 with app.app_context():
     db.create_all()    

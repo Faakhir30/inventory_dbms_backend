@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from dependencies.authentication import token_required_test
 from main import db
 from models.user import Admin, Customer, Supplier, User, Employee
 from sqlalchemy.exc import IntegrityError
@@ -12,6 +13,7 @@ auth_blueprint = Blueprint('auth', __name__, url_prefix='/auth')
 
 @auth_blueprint.route('/signup', methods=['POST'])
 def signup():
+    
     if request.method == 'POST':
         try:
             # Extracting details from the request
@@ -23,8 +25,12 @@ def signup():
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
             # Creating the user object
-            if role == 'admin':
-                new_user = Admin(user_name=name, email=email, password=hashed_password, contact=contact)
+            print("token>>>>>>>", request.headers.get("Authorization"))
+            # if role == 'admin':
+                # new_user = Admin(user_name=name, email=email, password=hashed_password, contact=contact)
+            if not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
+                return jsonify("Unauthorized"), 401
+
             elif role == 'customer':
                 new_user = Customer(user_name=name, email=email, password=hashed_password, contact=contact)
             elif role == 'supplier':
@@ -37,7 +43,7 @@ def signup():
             # Adding the user to the database
             db.session.add(new_user)
             db.session.commit()
-            return jsonify({'message': 'User created successfully'}), 201
+            return jsonify({'message': 'User created successfully', "status":201}), 201
 
         except IntegrityError as e:
             # Extracting details from the IntegrityError

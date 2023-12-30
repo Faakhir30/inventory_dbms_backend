@@ -8,6 +8,7 @@ def token_required_test(authorization: str):
     token = None
     if authorization and authorization.startswith("Bearer "):
         token = authorization.split(" ")[1]
+    print("data>>>>>>>>>>: ", token)
     if not token:
         return None
 
