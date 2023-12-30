@@ -15,11 +15,16 @@ from endpoints.auth import auth_blueprint
 from endpoints.product import product_blueprint
 from endpoints.order import order_blueprint
 from endpoints.users import users_blueprint
+from endpoints.product_item import product_item_blueprint
+from endpoints.order_item import order_item_blueprint
 
 app.register_blueprint(order_blueprint)
 app.register_blueprint(auth_blueprint)
 app.register_blueprint(product_blueprint)
 app.register_blueprint(users_blueprint)
+app.register_blueprint(product_item_blueprint)
+app.register_blueprint(order_item_blueprint)
+
 
 with app.app_context():
     db.create_all()    
@@ -30,6 +35,7 @@ def home(request):
     if request.method == 'GET':
         return jsonify({'message': 'Hello, World!'})
     return 'kausydf'
-
+        
+        
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

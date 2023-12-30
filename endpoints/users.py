@@ -23,6 +23,7 @@ def getUsers():
             user_data['email'] = user.email
             user_data['role'] = user.role
             user_data['contact'] = user.contact
+            user_data['image'] = user.image
             output.append(user_data)
         return jsonify({'users': output, 'message': 'success', 'status': '200'})
     
@@ -84,6 +85,9 @@ def updateUser(id):
             changes = True
         if 'password' in request.json and request.json['password']:
             user.password = bcrypt.hashpw(request.json['password'].encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+            changes = True
+        if 'image' in request.json and request.json['image']:
+            user.image = request.json['image']
             changes = True
         if not changes:
             return jsonify({'message': 'No changes made', 'status': '400'})

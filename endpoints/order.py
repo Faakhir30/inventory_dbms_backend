@@ -20,24 +20,37 @@ def add():
             # Extracting details from the request
             product_id = request.json['product_id']
             quantity = request.json['quantity']
+            customer_id = cur_user.id
+            if 'customer_id' in request.json:
+                customer_id = request.json['customer_id']
             employees = Employee.query.all()
-            most_free_emp_id = [(employee.id, employee.total_orders) for employee in employees].sort(key=lambda x: x[1])[0][0]
+            orders = Orders.query.all()
+            if not employees:
+                return jsonify({'error': 'No employee found'}), 400
+            most_free_emp_id = employees[0].id
+            most_free_emp_order_count = len([order for order in orders if order.emp_id == most_free_emp_id])
+            for emp in employees:
+                emp_order_count = len([order for order in orders if order.emp_id == emp.id])
+                if emp_order_count <= most_free_emp_order_count:
+                    most_free_emp_id = emp.id
+                    most_free_emp_order_count = emp_order_count
             if not most_free_emp_id:
                 return jsonify({'error': 'No employee found'}), 400
-            new_order = Orders(customer_id=cur_user.id, order_date=datetime.datetime.now(), emp=most_free_emp_id)      
+            new_order = Orders(cust_id=customer_id, ordered_date=datetime.datetime.now(), emp_id=most_free_emp_id)      
             db.session.add(new_order)
             db.session.commit()
             for product_id, quantity in zip(product_id, quantity):
                 new_order_item = OrderItem(order_id=new_order.id, product_id=product_id, quantity=quantity, unit_price=Product.query.filter_by(id=product_id).first().sale_price)
                 db.session.add(new_order_item)
                 db.session.commit()
-            return jsonify({'message': 'Order created successfully'}), 201
+            return jsonify({'message': 'Order created successfully', 'status':200}), 201
 
         except IntegrityError as e:
             # Extracting details from the IntegrityError
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
             return jsonify({'error': error_info}), 500
         except TypeError as e:
+            raise e
             return jsonify({'error': str(e)}), 400
         
 @order_blueprint.route('/get_all', methods=['GET'])
@@ -47,7 +60,7 @@ def get():
             if not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
                 return jsonify({"error": "Unauthorization Access"}), 400
             orders = Orders.query.all()
-            return jsonify([object_as_dict(order) for order in orders]), 200
+            return jsonify({"orders":[object_as_dict(order) for order in orders], "status":200}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -97,6 +110,29 @@ def delete(id):
                 return jsonify({'error': 'Order not found'}), 404
             db.session.delete(order)
             db.session.commit()
-            return jsonify({'message': 'Order deleted successfully'}), 200
+            return jsonify({'message': 'Order deleted successfully', 'status':200}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+        
+@order_blueprint.route('/update/<int:id>', methods=['PUT'])
+def update(id):
+    if request.method == 'PUT':
+        try:
+            cur_user = token_required_test(request.headers.get("Authorization"))
+            if not request.headers.get("Authorization") or not cur_user:
+                return jsonify({"error": "Unauthorization Access"}), 400
+            order = Orders.query.filter_by(id=id).first()
+            if not order:
+                return jsonify({'error': 'Order not found'}), 404
+            
+            order.cust_id = request.json['customer_id']
+            order.emp_id = request.json['emp_id']
+            order.status = request.json['status']
+            db.session.commit()
+            return jsonify({'message': 'Order updated successfully', 'status':200}), 200
+        except IntegrityError as e:
+            # Extracting details from the IntegrityError
+            error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
+            return jsonify({'error': error_info}), 500
+        except TypeError as e:
+            return jsonify({'error': str(e)}), 400

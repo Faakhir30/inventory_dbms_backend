@@ -20,16 +20,17 @@ def add():
             cost_price = request.json['cost_price']
             description = request.json['description']
             supplier_id = request.json['supplier_id']
+            quantity = request.json['quantity']
             image=None
             if request.json.get('image'):
                 image = request.json['image']
-            new_product = Product(name=name, sale_price=sale_price, cost_price=cost_price, description=description, image=image)
+            new_product = Product(name=name, sale_price=sale_price, cost_price=cost_price, description=description, image=image, total_quantity=quantity)
             db.session.add(new_product)
             db.session.commit()
-            new_product_item = ProductItem(product_id=new_product.id, supplier_id=supplier_id)
+            new_product_item = ProductItem(product_id=new_product.id, supplier_id=supplier_id, quantity=quantity)
             db.session.add(new_product_item)
             db.session.commit()
-            return jsonify({'message': 'Product created successfully'}), 201
+            return jsonify({'message': 'Product created successfully', 'status': 201}), 201
 
         except IntegrityError as e:
             # Extracting details from the IntegrityError
@@ -38,14 +39,14 @@ def add():
         except TypeError as e:
             return jsonify({'error': str(e)}), 400
         
-@product_blueprint.route('/get', methods=['GET'])
-def get():
+@product_blueprint.route('/get_all', methods=['GET'])
+def get_all():
     if request.method == 'GET':
         try:
             if not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
                 return jsonify({"error": "Unauthorization Access"}), 400
             products = Product.query.all()
-            return jsonify([object_as_dict(product) for product in products]), 200
+            return jsonify({"products":[object_as_dict(product) for product in products], "status": 200}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
 
@@ -82,7 +83,7 @@ def update(id):
             if request.json.get('image'):
                 product.image = request.json['image']
             db.session.commit()
-            return jsonify({'message': 'Product updated successfully'}), 200
+            return jsonify({'message': 'Product updated successfully', 'status':200 }), 200
         except IntegrityError as e:
             # Extracting details from the IntegrityError
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
@@ -101,6 +102,6 @@ def delete(id):
                 return jsonify({'error': 'Product not found'}), 404
             db.session.delete(product)
             db.session.commit()
-            return jsonify({'message': 'Product deleted successfully'}), 200
+            return jsonify({'message': 'Product deleted successfully', 'status': 200}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500

@@ -1,3 +1,4 @@
+from email.mime import image
 from flask import Blueprint, request, jsonify
 from dependencies.authentication import token_required_test
 from main import db
@@ -23,20 +24,20 @@ def signup():
             contact = request.json['contact']
             role = request.json['role']
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-
+            image = request.json['image']
             # Creating the user object
-            print("token>>>>>>>", request.headers.get("Authorization"))
-            # if role == 'admin':
-                # new_user = Admin(user_name=name, email=email, password=hashed_password, contact=contact)
-            if not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
+            if role == 'admin':
+                new_user = Admin(user_name=name, email=email, password=hashed_password, contact=contact)
+                
+            elif not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
                 return jsonify("Unauthorized"), 401
 
             elif role == 'customer':
-                new_user = Customer(user_name=name, email=email, password=hashed_password, contact=contact)
+                new_user = Customer(user_name=name, email=email, password=hashed_password, contact=contact, image=image)
             elif role == 'supplier':
-                new_user = Supplier(user_name=name, email=email, password=hashed_password, contact=contact)
+                new_user = Supplier(user_name=name, email=email, password=hashed_password, contact=contact, image=image)
             elif role == 'employee':
-                new_user = Employee(user_name=name, email=email, password=hashed_password, contact=contact)
+                new_user = Employee(user_name=name, email=email, password=hashed_password, contact=contact, image=image)
             else:
                 return jsonify({'error': 'Invalid role', 'status':400}), 400
 

@@ -9,6 +9,7 @@ class User(db.Model):
     password = db.Column(db.String)
     contact = db.Column(db.Numeric)
     role = db.Column(db.String)
+    image = db.Column(db.String, default='default.jpg')
     __mapper_args__ = {
         'polymorphic_identity': 'users',
         'polymorphic_on': role
