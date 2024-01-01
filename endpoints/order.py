@@ -19,8 +19,6 @@ def add():
             if not request.headers.get("Authorization") or not cur_user:
                 return jsonify({"error": "Unauthorization Access"}), 400
             # Extracting details from the request
-            product_id = request.json['product_id']
-            quantity = request.json['quantity']
             customer_id = cur_user.id
             if 'customer_id' in request.json:
                 customer_id = request.json['customer_id']
@@ -38,24 +36,34 @@ def add():
             if not most_free_emp_id:
                 return jsonify({'error': 'No employee found'}), 400
             new_order = Orders(cust_id=customer_id, ordered_date=datetime.datetime.now(), emp_id=most_free_emp_id)      
-            total = int(quantity) * Product.query.filter_by(id=product_id).first().sale_price
+            total = 0
             db.session.add(new_order)
             db.session.commit()
             new_transaction = Invoice(order_id=new_order.id, total=total, user_id=customer_id)
             db.session.add(new_transaction)
             db.session.commit()
-            for product_id, quantity in zip(product_id, quantity):
+            order_items = request.json['order_items']
+            for order_item in order_items:
+                product_id = order_item['product_id']
+                quantity = order_item['quantity']
+                if quantity <= 0:
+                    continue
+                total += Product.query.filter_by(id=product_id).first().sale_price * quantity
                 new_order_item = OrderItem(order_id=new_order.id, product_id=product_id, quantity=quantity, unit_price=Product.query.filter_by(id=product_id).first().sale_price)
                 db.session.add(new_order_item)
                 db.session.commit()
+            new_transaction.total = total
+            db.session.commit()
+            
             return jsonify({'message': 'Order created successfully', 'status':200}), 201
 
         except IntegrityError as e:
             # Extracting details from the IntegrityError
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
-            return jsonify({'error': error_info}), 500
+            raise e
+            return jsonify({'message': error_info}), 500
         except TypeError as e:
-            return jsonify({'error': str(e)}), 400
+            return jsonify({'message': str(e)}), 400
         
 @order_blueprint.route('/get_all', methods=['GET'])
 def get():

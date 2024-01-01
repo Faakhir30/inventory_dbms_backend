@@ -37,7 +37,7 @@ def get():
             if not cur_user:
                 return jsonify({"error": "Unauthorization Access"}), 400
             transactions = Invoice.query.all()
-            return jsonify([object_as_dict(transaction) for transaction in transactions]), 200
+            return jsonify({'transactions':[object_as_dict(transaction) for transaction in transactions], 'status':200}), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
         
