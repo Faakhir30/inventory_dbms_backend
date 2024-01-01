@@ -38,10 +38,11 @@ def add():
             if not most_free_emp_id:
                 return jsonify({'error': 'No employee found'}), 400
             new_order = Orders(cust_id=customer_id, ordered_date=datetime.datetime.now(), emp_id=most_free_emp_id)      
-            total = quantity * Product.query.filter_by(id=product_id).first().sale_price
-            new_transaction = Invoice(order_id=request.json['order_id'], total=total, user_id=customer_id)
-            db.session.add(new_transaction)
+            total = int(quantity) * Product.query.filter_by(id=product_id).first().sale_price
             db.session.add(new_order)
+            db.session.commit()
+            new_transaction = Invoice(order_id=new_order.id, total=total, user_id=customer_id)
+            db.session.add(new_transaction)
             db.session.commit()
             for product_id, quantity in zip(product_id, quantity):
                 new_order_item = OrderItem(order_id=new_order.id, product_id=product_id, quantity=quantity, unit_price=Product.query.filter_by(id=product_id).first().sale_price)
@@ -117,6 +118,7 @@ def delete(id):
             db.session.commit()
             return jsonify({'message': 'Order deleted successfully', 'status':200}), 200
         except Exception as e:
+            raise e
             return jsonify({'error': str(e)}), 500
         
 @order_blueprint.route('/update/<int:id>', methods=['PUT'])

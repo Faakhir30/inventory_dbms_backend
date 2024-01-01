@@ -17,6 +17,7 @@ from endpoints.order import order_blueprint
 from endpoints.users import users_blueprint
 from endpoints.product_item import product_item_blueprint
 from endpoints.order_item import order_item_blueprint
+from endpoints.transactions import transaction_blueprint
 
 app.register_blueprint(order_blueprint)
 app.register_blueprint(auth_blueprint)
@@ -24,7 +25,7 @@ app.register_blueprint(product_blueprint)
 app.register_blueprint(users_blueprint)
 app.register_blueprint(product_item_blueprint)
 app.register_blueprint(order_item_blueprint)
-
+app.register_blueprint(transaction_blueprint)
 
 with app.app_context():
     db.create_all()    

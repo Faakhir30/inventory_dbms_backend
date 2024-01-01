@@ -46,7 +46,7 @@ def add():
             quantity = request.json['quantity']
             new_order_item = OrderItem(order_id=order_id, product_id=product_id, quantity=quantity, unit_price= Product.query.filter_by(id=product_id).first().sale_price)
             transaction = Invoice.query.filter_by(order_id=order_id).first()
-            transaction.total += quantity * Product.query.filter_by(id=product_id).first().sale_price
+            transaction.total += int(quantity) * Product.query.filter_by(id=product_id).first().sale_price
             db.session.add(transaction)
             db.session.add(new_order_item)
             db.session.commit()

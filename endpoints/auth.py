@@ -39,7 +39,7 @@ def signup():
             elif role == 'employee':
                 new_user = Employee(user_name=name, email=email, password=hashed_password, contact=contact, image=image)
             else:
-                return jsonify({'error': 'Invalid role', 'status':400}), 400
+                return jsonify({'message': 'Invalid role', 'status':400}), 400
 
             # Adding the user to the database
             db.session.add(new_user)
@@ -49,9 +49,9 @@ def signup():
         except IntegrityError as e:
             # Extracting details from the IntegrityError
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
-            return jsonify({'error': error_info}), 500
+            return jsonify({'message': error_info, 'status':500}), 500
         except TypeError as e:
-            return jsonify({'error': str(e), 'status':400}), 400
+            return jsonify({'message': str(e), 'status':400}), 400
         
 @auth_blueprint.route('/login', methods=['POST'])
 def login():
@@ -61,10 +61,10 @@ def login():
             password = request.json['password']
             user = User.query.filter_by(email=email).first()
             if user is None:
-                return jsonify({'error': 'Invalid email or password', 'status':400}), 400
+                return jsonify({'message': 'Invalid email or password', 'status':400}), 400
             hashed_password = user.password
             if not bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8')):
-                return jsonify({'error': 'Invalid email or password', 'status':400}), 400
+                return jsonify({'message': 'Invalid email or password', 'status':400}), 400
 
             # Creating the response object
             response = {
@@ -87,4 +87,4 @@ def login():
         except IntegrityError as e:
             # Extracting details from the IntegrityError
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
-            return jsonify({'error': error_info}), 500
+            return jsonify({'message': error_info}), 500
