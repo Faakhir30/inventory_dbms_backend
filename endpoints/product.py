@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify
 from main import db
-from models.product import Product, ProductItem
+from models.product import Images, Product, ProductItem
 from sqlalchemy.exc import IntegrityError
 from dependencies.authentication import token_required_test
 from utils.general import object_as_dict
@@ -21,12 +21,13 @@ def add():
             description = request.json['description']
             supplier_id = request.json['supplier_id']
             quantity = request.json['quantity']
-            image=None
-            if request.json.get('image'):
-                image = request.json['image']
-            new_product = Product(name=name, sale_price=sale_price, cost_price=cost_price, description=description, image=image, total_quantity=quantity)
+            new_product = Product(name=name, sale_price=sale_price, cost_price=cost_price, description=description, total_quantity=quantity)
             db.session.add(new_product)
             db.session.commit()
+            if request.json.get('images'):
+                for image in request.json['images']:
+                    new_image = Images(product_id=new_product.id, image=image)
+                    db.session.add(new_image)
             new_product_item = ProductItem(product_id=new_product.id, supplier_id=supplier_id, quantity=quantity)
             db.session.add(new_product_item)
             db.session.commit()
@@ -48,8 +49,14 @@ def get_all():
             if not request.headers.get("Authorization") or not token_required_test(request.headers.get("Authorization")):
                 return jsonify({"error": "Unauthorization Access"}), 400
             products = Product.query.all()
-            return jsonify({"products":[object_as_dict(product) for product in products], "status": 200}), 200
+            products_list = []
+            for product in products:
+                obj = object_as_dict(product)
+                obj["images"] = [image.image for image in Images.query.filter_by(product_id=product.id).all()]
+                products_list.append(obj)
+            return jsonify({"products":products_list, "status": 200}), 200
         except Exception as e:
+            raise e
             return jsonify({'error': str(e)}), 500
 
 @product_blueprint.route('/get/<int:id>', methods=['GET'])

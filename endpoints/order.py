@@ -3,7 +3,7 @@ from models.transaction import Invoice
 from main import db
 from models.user import Employee
 from models.product import Product
-from models.order import Orders, OrderItem
+from models.order import OrderStatus, Orders, OrderItem
 from sqlalchemy.exc import IntegrityError
 from dependencies.authentication import token_required_test
 from utils.general import object_as_dict
@@ -142,8 +142,14 @@ def update(id):
             
             order.cust_id = request.json['customer_id']
             order.emp_id = request.json['emp_id']
-            order.status = request.json['status']
-            if order.status == 'completed':
+            status = request.json['status']
+            if status == 'completed':
+                order.status = OrderStatus.COMPLETED
+            elif status == 'processing':
+                order.status = OrderStatus.PROCESSING
+            else:
+                order.status = OrderStatus.PENDING
+            if status == 'completed':
                 transaction = Invoice.query.filter_by(order_id=id).first()
                 transaction.status = 'completed'
                 db.session.add(transaction)
