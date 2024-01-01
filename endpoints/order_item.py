@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from models.transaction import Invoice
 from main import db
 from models.user import Employee
 from models.product import Product
@@ -44,6 +45,9 @@ def add():
             product_id = request.json['product_id']
             quantity = request.json['quantity']
             new_order_item = OrderItem(order_id=order_id, product_id=product_id, quantity=quantity, unit_price= Product.query.filter_by(id=product_id).first().sale_price)
+            transaction = Invoice.query.filter_by(order_id=order_id).first()
+            transaction.total += quantity * Product.query.filter_by(id=product_id).first().sale_price
+            db.session.add(transaction)
             db.session.add(new_order_item)
             db.session.commit()
             return jsonify({'message': 'OrderItem created successfully', 'status':200}), 201
@@ -84,6 +88,8 @@ def delete(id):
             if not request.headers.get("Authorization") or not cur_user:
                 return jsonify({"error": "Unauthorization Access"}), 400
             order_item = OrderItem.query.filter_by(id=id).first()
+            transaction = Invoice.query.filter_by(order_id=order_item.order_id).first()
+            transaction.total -= order_item.quantity * order_item.unit_price
             db.session.delete(order_item)
             db.session.commit()
             return jsonify({'message': 'OrderItem deleted successfully', 'status':200}), 200

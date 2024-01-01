@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from models.transaction import Invoice
 from main import db
 from models.user import Employee
 from models.product import Product
@@ -37,6 +38,9 @@ def add():
             if not most_free_emp_id:
                 return jsonify({'error': 'No employee found'}), 400
             new_order = Orders(cust_id=customer_id, ordered_date=datetime.datetime.now(), emp_id=most_free_emp_id)      
+            total = quantity * Product.query.filter_by(id=product_id).first().sale_price
+            new_transaction = Invoice(order_id=request.json['order_id'], total=total, user_id=customer_id)
+            db.session.add(new_transaction)
             db.session.add(new_order)
             db.session.commit()
             for product_id, quantity in zip(product_id, quantity):
@@ -50,7 +54,6 @@ def add():
             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
             return jsonify({'error': error_info}), 500
         except TypeError as e:
-            raise e
             return jsonify({'error': str(e)}), 400
         
 @order_blueprint.route('/get_all', methods=['GET'])
@@ -108,6 +111,8 @@ def delete(id):
             order = Orders.query.filter_by(id=id).first()
             if not order:
                 return jsonify({'error': 'Order not found'}), 404
+            transaction = Invoice.query.filter_by(order_id=id).first()
+            db.session.delete(transaction)
             db.session.delete(order)
             db.session.commit()
             return jsonify({'message': 'Order deleted successfully', 'status':200}), 200
@@ -128,6 +133,10 @@ def update(id):
             order.cust_id = request.json['customer_id']
             order.emp_id = request.json['emp_id']
             order.status = request.json['status']
+            if order.status == 'completed':
+                transaction = Invoice.query.filter_by(order_id=id).first()
+                transaction.status = 'completed'
+                db.session.add(transaction)
             db.session.commit()
             return jsonify({'message': 'Order updated successfully', 'status':200}), 200
         except IntegrityError as e:

@@ -41,6 +41,9 @@ def update(id):
             product_item = ProductItem.query.filter_by(product_id=id).first()
             if not product_item:
                 return jsonify({'error': 'No product_item found!'}), 404
+            product = Product.query.filter_by(id=product_item.product_id).first()
+            product.total_quantity -= product_item.quantity
+            product.total_quantity += request.json['quantity']
             product_item.quantity = request.json['quantity']
             db.session.commit()
             return jsonify({'message': 'Product_item updated successfully', 'status':200}), 200
@@ -60,6 +63,8 @@ def delete(id):
             product_item = ProductItem.query.filter_by(id=id).first()
             if not product_item:
                 return jsonify({'error': 'No product_item found!'}), 404
+            product = Product.query.filter_by(id=product_item.product_id).first()
+            product.total_quantity -= product_item.quantity
             db.session.delete(product_item)
             db.session.commit()
             return jsonify({'message': 'Product_item deleted successfully', 'status':200}), 200
@@ -78,6 +83,9 @@ def add():
                 supplier_id=request.json['supplier_id'],
                 quantity=request.json['quantity']
             )
+            product = Product.query.filter_by(id=product_item.product_id).first()
+            product.total_quantity += product_item.quantity
+            
             db.session.add(product_item)
             db.session.commit()
             return jsonify({'message': 'Product_item added successfully', 'status':200}), 200

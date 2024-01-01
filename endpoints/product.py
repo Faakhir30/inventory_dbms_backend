@@ -30,6 +30,8 @@ def add():
             new_product_item = ProductItem(product_id=new_product.id, supplier_id=supplier_id, quantity=quantity)
             db.session.add(new_product_item)
             db.session.commit()
+            if sale_price < cost_price:
+                return jsonify({'message': 'Warning: added product with lower sale price', "status": 200})
             return jsonify({'message': 'Product created successfully', 'status': 201}), 201
 
         except IntegrityError as e:
@@ -100,6 +102,9 @@ def delete(id):
             product = Product.query.filter_by(id=id).first()
             if not product:
                 return jsonify({'error': 'Product not found'}), 404
+            product_items = ProductItem.query.filter_by(product_id=id).all()
+            for product_item in product_items:
+                db.session.delete(product_item)
             db.session.delete(product)
             db.session.commit()
             return jsonify({'message': 'Product deleted successfully', 'status': 200}), 200
