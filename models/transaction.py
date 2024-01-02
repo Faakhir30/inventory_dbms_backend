@@ -1,3 +1,4 @@
+import datetime
 from main import db
 
 class Invoice(db.Model):
@@ -10,5 +11,5 @@ class Invoice(db.Model):
 class Ledger(db.Model):
     __tablename__ = 'ledger'
     id = db.Column(db.Integer, primary_key=True)
-    cust_id = db.Column(db.Integer, db.ForeignKey('customer.id', ondelete='CASCADE'))
     file_data = db.Column(db.LargeBinary)
+    date_created = db.Column(db.DateTime, default=datetime.datetime.utcnow)

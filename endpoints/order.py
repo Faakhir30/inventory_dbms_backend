@@ -48,8 +48,12 @@ def add():
                 quantity = order_item['quantity']
                 if quantity <= 0:
                     continue
-                total += Product.query.filter_by(id=product_id).first().sale_price * quantity
+                
+                product = Product.query.filter_by(id=product_id).first()
+                product.total_quantity -= quantity
+                total += product.sale_price * quantity
                 new_order_item = OrderItem(order_id=new_order.id, product_id=product_id, quantity=quantity, unit_price=Product.query.filter_by(id=product_id).first().sale_price)
+                db.session.add(product)
                 db.session.add(new_order_item)
                 db.session.commit()
             new_transaction.total = total
@@ -120,6 +124,12 @@ def delete(id):
             order = Orders.query.filter_by(id=id).first()
             if not order:
                 return jsonify({'error': 'Order not found'}), 404
+            order_items = OrderItem.query.filter_by(order_id=id).all()
+            for order_item in order_items:
+                product = Product.query.filter_by(id=order_item.product_id).first()
+                product.total_quantity += order_item.quantity
+                db.session.delete(order_item)
+                
             transaction = Invoice.query.filter_by(order_id=id).first()
             db.session.delete(transaction)
             db.session.delete(order)
