@@ -75,6 +75,7 @@ def login():
                     'email': user.email,
                     'contact': str(user.contact),
                     'role': user.role,
+                    'image': user.image,
                     'created_at': datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }
             }

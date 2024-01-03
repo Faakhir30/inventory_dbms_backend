@@ -81,11 +81,11 @@ def add():
             product_item = ProductItem(
                 product_id=request.json['product_id'],
                 supplier_id=request.json['supplier_id'],
-                quantity=request.json['quantity']
+                quantity=int(request.json['quantity'])
             )
             product = Product.query.filter_by(id=product_item.product_id).first()
             product.total_quantity += product_item.quantity
-            
+            db.session.add(product)
             db.session.add(product_item)
             db.session.commit()
             return jsonify({'message': 'Product_item added successfully', 'status':200}), 200

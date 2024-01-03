@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.transaction import Invoice
 from main import db
 from models.user import Employee
-from models.product import Product
+from models.product import Product, ProductItem
 from models.order import OrderStatus, Orders, OrderItem
 from sqlalchemy.exc import IntegrityError
 from dependencies.authentication import token_required_test
@@ -50,10 +50,12 @@ def add():
                     continue
                 
                 product = Product.query.filter_by(id=product_id).first()
+                print(product.total_quantity, quantity, ">>>>>>>")
                 product.total_quantity -= quantity
                 total += product.sale_price * quantity
                 new_order_item = OrderItem(order_id=new_order.id, product_id=product_id, quantity=quantity, unit_price=Product.query.filter_by(id=product_id).first().sale_price)
                 db.session.add(product)
+                db.session.commit()
                 db.session.add(new_order_item)
                 db.session.commit()
             new_transaction.total = total
@@ -129,14 +131,13 @@ def delete(id):
                 product = Product.query.filter_by(id=order_item.product_id).first()
                 product.total_quantity += order_item.quantity
                 db.session.delete(order_item)
-                
+                db.session.add(product)               
             transaction = Invoice.query.filter_by(order_id=id).first()
             db.session.delete(transaction)
             db.session.delete(order)
             db.session.commit()
             return jsonify({'message': 'Order deleted successfully', 'status':200}), 200
         except Exception as e:
-            raise e
             return jsonify({'error': str(e)}), 500
         
 @order_blueprint.route('/update/<int:id>', methods=['PUT'])
@@ -160,6 +161,19 @@ def update(id):
             else:
                 order.status = OrderStatus.PENDING
             if status == 'completed':
+                order_items = OrderItem.query.filter_by(order_id=id).all()
+                for order_item in order_items:
+                    product_items = ProductItem.query.filter_by(product_id=order_item.product_id).all()
+                    for product_item in product_items:
+                        if product_item.quantity >= order_item.quantity:
+                            product_item.quantity -= order_item.quantity
+                            order_item.quantity = 0
+                            db.session.delete(order_item)
+                            break
+                        else:
+                            order_item.quantity -= product_item.quantity
+                            product_item.quantity = 0
+                            db.session.delete(product_item)
                 transaction = Invoice.query.filter_by(order_id=id).first()
                 transaction.status = 'completed'
                 db.session.add(transaction)
