@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from main import db
 from models.order import Orders, OrderItem
-from models.transaction import Invoice, Ledger
+from models.transaction import Invoice
 from sqlalchemy.exc import IntegrityError
 from dependencies.authentication import token_required_test
 from utils.general import object_as_dict
@@ -68,21 +68,21 @@ def get_cur_user():
             return jsonify({'error': str(e)}), 500
         
         
-@transaction_blueprint.route('add_ledger', methods=['POST'])
-def add_ledger():
-    if request.method == 'POST':
-        try:
-            cur_user = token_required_test(request.headers.get("Authorization"))
-            if not cur_user:
-                return jsonify({"error": "Unauthorization Access"}), 400
-            new_ledger = Ledger(cust_id=cur_user.id, file_data=request.json['file_data'])
-            db.session.add(new_ledger)
-            db.session.commit()
-            return jsonify({'message': 'Ledger created successfully'}), 201
+# @transaction_blueprint.route('add_ledger', methods=['POST'])
+# def add_ledger():
+#     if request.method == 'POST':
+#         try:
+#             cur_user = token_required_test(request.headers.get("Authorization"))
+#             if not cur_user:
+#                 return jsonify({"error": "Unauthorization Access"}), 400
+#             new_ledger = Ledger(cust_id=cur_user.id, file_data=request.json['file_data'])
+#             db.session.add(new_ledger)
+#             db.session.commit()
+#             return jsonify({'message': 'Ledger created successfully'}), 201
 
-        except IntegrityError as e:
-            # Extracting details from the IntegrityError
-            error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
-            return jsonify({'error': error_info}), 500
-        except TypeError as e:
-            return jsonify({'error': str(e)}), 400
+#         except IntegrityError as e:
+#             # Extracting details from the IntegrityError
+#             error_info = e.orig.diag.message_primary if e.orig.diag.message_primary else str(e.orig)
+#             return jsonify({'error': error_info}), 500
+#         except TypeError as e:
+#             return jsonify({'error': str(e)}), 400
